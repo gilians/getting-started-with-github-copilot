@@ -21,9 +21,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Build participants HTML (bulleted list) or a friendly placeholder
+        // Build participants HTML with delete icons
         const participantsHTML = details.participants && details.participants.length
-          ? `<ul class="participants-list">${details.participants.map(p => `<li>${p}</li>`).join('')}</ul>`
+          ? `<div class="participants-list">${details.participants.map(p => 
+              `<div class="participant-item">
+                <span class="participant-email">${p}</span>
+                <button class="delete-btn" data-activity="${name}" data-email="${p}" title="Remove participant">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              </div>`
+            ).join('')}</div>`
           : `<p class="no-participants">No participants yet</p>`;
 
         activityCard.innerHTML = `
@@ -38,6 +50,37 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // Add event listeners to delete buttons
+        const deleteButtons = activityCard.querySelectorAll('.delete-btn');
+        deleteButtons.forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const activityName = btn.dataset.activity;
+            const email = btn.dataset.email;
+
+            try {
+              const response = await fetch(
+                `/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`,
+                {
+                  method: "DELETE",
+                }
+              );
+
+              if (response.ok) {
+                // Refresh the activities list
+                fetchActivities();
+              } else {
+                const error = await response.json();
+                console.error("Error unregistering:", error);
+                alert("Failed to remove participant: " + (error.detail || "Unknown error"));
+              }
+            } catch (error) {
+              console.error("Error unregistering:", error);
+              alert("Failed to remove participant. Please try again.");
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
